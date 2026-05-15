@@ -1,12 +1,14 @@
 import pandas as pd
-
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 
+# 1. Load Data
 df = pd.read_csv("biased_leukemia_dataset.csv")
 
+# 2. Preprocessing & Cleaning
 # Clean all text columns
 for col in df.select_dtypes(include=["object"]).columns:
     df[col] = df[col].astype(str).str.strip().str.title()
@@ -48,28 +50,42 @@ df[bool_cols] = df[bool_cols].astype(int)
 # Drop rows with failed mappings/missing values
 df = df.dropna()
 
+# 3. Split Data
 x = df.drop(target, axis=1)
 y = df[target]
-
-print("Text columns in x:")
-print(x.dtypes[x.dtypes == "object"])
 
 x_train, x_test, y_train, y_test = train_test_split(
     x, y, test_size=0.2, random_state=42, stratify=y
 )
 
+# 4. Scaling (Optional for RF, but good for consistency)
 scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
 
-model = LogisticRegression(class_weight="balanced", max_iter=1000)
+# 5. Random Forest Integration
+# n_estimators: number of trees in the forest
+# class_weight="balanced": handles the "biased" nature of the dataset
+model = RandomForestClassifier(n_estimators=100, class_weight="balanced", random_state=42)
 model.fit(x_train, y_train)
 
+# 6. Evaluation
 y_pred = model.predict(x_test)
 
+print("--- Random Forest Model Results ---")
 print("Accuracy:", accuracy_score(y_test, y_pred))
-print(classification_report(y_test, y_pred))
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
+# 7. Probability Analysis
 probs = model.predict_proba(x_test)[:, 1]
-print("Probability range:", probs.min(), probs.max())
-print("First 20 probabilities:", probs[:20])
+print("\nProbability range:", probs.min(), "-", probs.max())
+print("First 10 predicted probabilities:", probs[:10])
+
+# 8. Feature Importance (Bonus)
+# This identifies which variables had the most impact on the prediction
+importances = model.feature_importances_
+feature_importance_df = pd.DataFrame({'Feature': x.columns, 'Importance': importances})
+feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
+
+print("\nTop 5 Most Influential Features:")
+print(feature_importance_df.head(5))
