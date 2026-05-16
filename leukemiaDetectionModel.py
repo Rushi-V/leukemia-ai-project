@@ -215,6 +215,7 @@ print(feature_importance_df.head(10).to_string(index=False))
 
 joblib.dump(model, "leukemia_model.pkl")
 joblib.dump(le,    "leukemia_label_encoder.pkl")
+joblib.dump(x.columns.tolist(), "feature_columns.pkl")
 
 print("\nModel saved to: leukemia_model.pkl")
 print("Label encoder saved to: leukemia_label_encoder.pkl")
